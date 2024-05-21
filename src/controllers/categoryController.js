@@ -4,11 +4,11 @@ const { Op, fn, col } = require('sequelize');
 const { Category } = require('../db');
 const createCategory = async (name) => {
     try {
-        const category = await Category.create({
-            name: name
-            // no incluyas 'id' aquí
-          });
-        return category ;
+        const [category, created] = await Category.findOrCreate({
+            where: { name },
+            defaults: { name }
+        });
+        return { category, created };
     } catch (error) {
         throw new Error('Error creating user: ' + error.message);
     }
