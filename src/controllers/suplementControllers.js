@@ -4,6 +4,7 @@ const { Op, fn, col } = require('sequelize');
 const { cleanInfoSuplements } = require('../utils/index');
 
 const getSuplements = async () => {
+
     const suplements = await Suplement.findAll({include : [
         {
             model: Category,
@@ -68,8 +69,8 @@ const includeAll = (categoryId) => {
 
 }
 
-const getFilteredSuplementsController = async (params) => {
-    const { category, orderBy, orderDirection , name} = params
+const getFilteredSuplementsController = async (query) => {
+    const { category, orderBy, orderDirection } = query
     let order = [];
     if (orderBy && orderDirection) {
         order = [[orderBy, orderDirection]]
@@ -77,7 +78,7 @@ const getFilteredSuplementsController = async (params) => {
 
     let where = {};
 
-    if (name) where = { ...where, name };
+    // if (category) where = { ...where, category };
 
     try {
         // let include= includeAll(category)
@@ -101,10 +102,31 @@ const getFilteredSuplementsController = async (params) => {
         throw Error(error.message);
     }
 };
+const getRandomSuplements = async () => {
+    try {
+        const suplements = await Suplement.findAll({
+            include: [
+                {
+                    model: Category,
+                    attributes: ["id", "name"],
+                    through: { attributes: [] },
+                },
+            ],
+            order: [
+                [fn('RANDOM')],
+            ],
+            limit: 3,
+        });
+        return suplements;
+    } catch (error) {
+        throw new Error(error.message);
+    }
+};
 module.exports = {
     getSuplements,
     getSuplementByName,
     getSuplementById,
     createSuplement,
-    getFilteredSuplementsController
+    getFilteredSuplementsController,
+    getRandomSuplements
 }
