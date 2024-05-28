@@ -4,7 +4,6 @@ const { Op, fn, col } = require('sequelize');
 const { Category } = require('../db');
 const createCategory = async (category) => {
     try {
-        console.log('Creating category with name:', category);
         
         const [categoryCreated, created] = await Category.findOrCreate({
         where: where(fn('LOWER', col('name')), Op.eq, category.toLowerCase()),
@@ -13,7 +12,6 @@ const createCategory = async (category) => {
 
         return categoryCreated;
     } catch (error) {
-        console.error('Error creating category:', error);
         throw new Error('Error creating category: ' + error.message);
     }
 };
