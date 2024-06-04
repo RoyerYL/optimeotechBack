@@ -5,20 +5,20 @@ const path = require('path');
 
 // Leo las variables de entorno
 const {
-  DB_USER, DB_PASSWORD, DB_HOST, DB_NAME ,DB_DEPLOY
+  DB_USER, DB_PASSWORD, DB_HOST, DB_NAME, DB_DEPLOY
 } = process.env;
 
 ///////////////BASE//DE//DATOS//LOCAL/////////////////////////////////////////////////////////////////////
-// const sequelize = new Sequelize(`postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/${DB_NAME}`, {
-//     logging: false, // set to console.log to see the raw SQL queries
-//     native: false, // lets Sequelize know we can use pg-native for ~30% more speed
-// });
-///////////////BASE//DE//DATOS//DEPLOY/////////////////////////////////////////////////////////////////////
-
-const sequelize = new Sequelize(DB_DEPLOY, {
+const sequelize = new Sequelize(`postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/${DB_NAME}`, {
   logging: false, // set to console.log to see the raw SQL queries
   native: false, // lets Sequelize know we can use pg-native for ~30% more speed
 });
+///////////////BASE//DE//DATOS//DEPLOY/////////////////////////////////////////////////////////////////////
+
+// const sequelize = new Sequelize(DB_DEPLOY, {
+//   logging: false, // set to console.log to see the raw SQL queries
+//   native: false, // lets Sequelize know we can use pg-native for ~30% more speed
+// });
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const basename = path.basename(__filename);
@@ -40,23 +40,43 @@ sequelize.models = Object.fromEntries(capsEntries);
 
 // En sequelize.models están todos los modelos importados como propiedades
 // Para relacionarlos hacemos un destructuring
-const { Suplement, User ,Category, Cart, CartItem } = sequelize.models;
+const { Suplement, User, Category, Orden,Provider, Tag, OrdenSuplement, Cart, CartSuplements } = sequelize.models;
 
 // Aca vendrian las relaciones
 // Product.hasMany(Reviews);
 
-Suplement.belongsToMany(User, { through: 'suplement_user' });
-User.belongsToMany(Suplement, { through: 'suplement_user' });
+// Una categoría tiene muchos suplementos
+Category.hasMany(Suplement, {
+  foreignKey: 'CategoryId',
+  onDelete: 'CASCADE'
+});
 
-Suplement.belongsToMany(Category, { through: "category_suplement" });
-Category.belongsToMany(Suplement, { through: "category_suplement" });
+// Un suplemento pertenece a una categoría
+Suplement.belongsTo(Category, {
+  foreignKey: 'CategoryId'
+});
+
+// User.hasMany(Cart, { as: 'carts', foreignKey: 'userId' });
+// Suplement.hasMany(CartItem, { as: 'itemProducts', foreignKey: 'suplementId' });
+
+Orden.belongsTo(User, { foreignKey: 'userId' });
+Orden.belongsToMany(Suplement, { through: 'orden_suplement', foreignKey: 'ordenId' });
+Suplement.belongsToMany(Orden, { through: 'orden_suplement', foreignKey: 'suplementId' });
+
+
 
 User.hasMany(Cart, { as: 'carts', foreignKey: 'userId' });
-Suplement.hasMany(CartItem, { as: 'itemProducts', foreignKey: 'suplementId' });
-Cart.belongsTo(User, { as: 'user' });
-CartItem.belongsTo(Suplement, { as: 'suplement', foreignKey: 'suplementId' });
-Cart.hasMany(CartItem, { as: 'cartItems', foreignKey: 'cartId' });
-CartItem.belongsTo(Cart, { as: 'cart', foreignKey: 'cartId' });
+Cart.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+
+Cart.belongsToMany(Suplement, { through: CartSuplements, foreignKey: 'cartId' });
+Suplement.belongsToMany(Cart, { through: CartSuplements, foreignKey: 'suplementId' });
+
+
+Suplement.belongsTo(Provider);
+Provider.hasMany(Suplement);
+
+Suplement.belongsToMany(Tag, { through: "SuplementTag" });
+Tag.belongsToMany(Suplement, { through: "SuplementTag" });
 
 module.exports = {
   ...sequelize.models, // para poder importar los modelos así: const { Product, User } = require('./db.js');

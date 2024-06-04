@@ -1,92 +1,123 @@
-const mercadopago = require('mercadopago')
 require('dotenv').config();
-// const { MercadoPagoConfig, Preference } = require('mercadopago');
+const { ACCESS_TOKEN } = process.env;
+const { Orden, Suplement } = require('../db');
+const axios = require('axios')
+//IMPORTS MERCADO PAGO
+const { MercadoPagoConfig, Preference } = require('mercadopago');
+const mercadopago = require('mercadopago')
 
-const {
-    ACCESS_TOKEN
-} = process.env;
+
+const client = new MercadoPagoConfig({ accessToken: `${ACCESS_TOKEN}` });
+
 
 const createOrder = async (req, res) => {
+    // console.log(req.body);s
+    // const { items, total } = req.body;
 
-    mercadopago.configure({
-        ACCESS_TOKEN,
-    });
-
-    let preference = {
-        items: [
-            {
-                title: req.body.description,
-                unit_price: Number(req.body.price),
-                quantity: Number(req.body.quantity),
+    try {
+        const body = {
+            items: req.body.items.map((item) => {
+                return {
+                    title: item.title,
+                    unit_price: parseFloat(item.price),
+                    quantity: parseFloat(item.quantity),
+                    currency_id: "ARS",
+                }
             }
-        ],
-        back_urls: {
-            success: "http://localhost:5173",
-            failure: "http://localhost:5173",
-            pending: ""
-        },
-        auto_return: "approved",
-    };
+            ),
+            back_urls: {
+                "success": `http://localhost:5173/home`,
+                "failure": `http://localhost:5173/home`,
+                "pending": `http://localhost:5173/home`
+            },
+            notification_url: "https://9a94-186-128-85-193.ngrok-free.app/payment/webhook",
+        };
 
-    mercadopago.preferences.create(preference)
-        .then(function (response) {
-            res.json({
-                id: response.body.id
+        const preference = new Preference(client)
+
+        const result = await preference.create({ body })
+        // console.log(result);
+        res.json({ point: result.init_point, });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            error: "Error al crear la preferencia :(",
+        })
+    }
+}
+
+const receiveWebhook = async (req, res) => {
+    console.log('datos recibidos en el webhook:', req.query);
+
+    const paymentId = req.query['data.id'];
+    const topic = req.query.type;
+
+    if (topic === 'payment') {
+        try {
+            const response = await axios.get(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+                headers: {
+                    Authorization: `Bearer ${process.env.ACCESS_TOKEN}`
+                }
             });
-        }).catch(function (error) {
-            console.log(error);
-        });
 
-    // ---------------------
-    // Configura tus credenciales de acceso !! ULTIMA VERSION
-    // const mp = new MercadoPagoConfig({
-    //     access_token: 'TEST-5195882570333001-051518-9c11188389044e24ccbcf9c9336188e6-1813050139', // Reemplaza con tu access token
-    // });
+            const payment = response.data;
+            console.log('Datos de la api de mp:', payment);
 
-    // mercadopago.configure({
-    //     access_token: "TEST-5195882570333001-051518-9c11188389044e24ccbcf9c9336188e6-1813050139",
-    // });
+            const { transaction_details, additional_info, status: mpStatus, payer } = payment;
+            const total_paid_amount = Math.round(transaction_details.total_paid_amount * 100); // convirtiendo a num entero
+            const items = additional_info.items;
+            // console.log('items:', items);
+            // console.log('Payer:', payer);
 
-    //CREANDO LA ORDEN PARA EL PAGO
-    // const result = await mercadopago.preferences.create({
-    //     items: [
-    //         {
-    //             title: "Suplement",
-    //             unit_price: 500,
-    //             currency_id: "ARS",
-    //             quantity: 1,
-    //         }
-    //     ]
-    // })
+            let status;
+            if (mpStatus === 'approved') {
+                status = 'completed';
+            } else if (mpStatus === 'pending') {
+                status = 'pending';
+            } else {
+                status = 'cancelled';
+            }
 
-    //     back_urls: {
-    //         success: "http://localhost:5173"
-    //         failure: "http://localhost:5173"
-    //         pending: ""
-    //     }
-    //     notification_url: "https://6be7-186-128-46-113.ngrok-free.app/webhook"
-    //     console.log(result);
+            const orden = await Orden.create({
+                total: total_paid_amount,
+                status,
+                paymentMethod: 'mercadopago'
+            });
 
-    //     res.send(result.body)
-};
+            console.log('Orden creada:', orden);
+            // AÑADIR suplementos a la orden
+            for (const item of items) {
+                // ESTRUCTURA DEL ITEM
+                if (!item.title || !item.quantity || !item.unit_price) {
+                    throw new Error(`El item no tiene la estructura esperada: ${JSON.stringify(item)}`);
+                }
 
-// const receiveWebhook = async (req, res) => {
+                const suplementoName = item.title;
+                const cantidad = parseInt(item.quantity, 10);
+                const precio = Math.round(parseFloat(item.unit_price) * 100); 
 
-//     // aca se reciben los datos del webhook 
-//     const payment = req.query
+                console.log(`Buscando suplemento con título: ${suplementoName}`);
 
-//     try {
-//         if (payment.type === 'payment') {
-//             const data = await mercadopago.payment.findById(payment['data.id'])
-//             console.log(data);
-//             // podemos guardar los datos en la bdd
-//         }
+                const suplemento = await Suplement.findOne({ where: { name: suplementoName } });
+                if (!suplemento) {
+                    throw new Error(`Suplemento con título ${suplementoName} no encontrado en la base de datos`);
+                }
+                console.log(`Suplemento encontrado: ${suplemento.id}, añadiendo a la orden`);
+                await orden.addSuplement(suplemento, { through: { cantidad, precio } });
+            }
 
-//         res.sendStatus(204);
-//     } catch (error) {
-//         console.log(error);
-//         return res.sendStatus(500).json({ error: error.message })
-//     }
-// }
+            res.status(200).send('webhook proces con exito');
+        } catch (error) {
+            console.error('Error al procesar el webhook de Mercado Pago:', error);
+            res.status(500).json({
+                message: 'Error al procesar el webhook de Mercado Pago',
+                error: error.message
+            });
+        }
+    } else {
+        res.status(400).send('tipo de webhook no soportado');
+    }
+}
 
-module.exports = { createOrder, }
+
+module.exports = { createOrder, receiveWebhook }

@@ -1,7 +1,8 @@
 
-const { getSuplements, getSuplementByName, getSuplementById, createSuplement, getFilteredSuplementsController, getRandomSuplements } = require('../controllers/suplementControllers');
+const { getSuplements, getSuplementByName, getSuplementById, createSuplement, getFilteredSuplementsController, getRandomSuplements, updateSuplement } = require('../controllers/suplementControllers');
 const cloudinaryPush = require("../utils/cloudinaryPush")
 const path = require("path");
+const deleteImageFromCloudinary = require('../utils/deleteImageFromCloudinary');
 //por query
 const getSuplementsHandler = async (req, res) => {
     const { name } = req.query;
@@ -19,8 +20,8 @@ const getSuplementsHandler = async (req, res) => {
 }
 const getRandomSuplementsHandler = async (req, res) => {
     try {
-            const response = await getRandomSuplements();
-            res.status(200).json(response);
+        const response = await getRandomSuplements();
+        res.status(200).json(response);
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
@@ -40,7 +41,7 @@ const getSuplementByIdHandler = async (req, res) => {
 
 //por body
 const createSuplementHandler = async (req, res) => {
-    const { name, category, description, price, amount } = req.body;
+    const { name, category, description, price, amount,  provider ,tags } = req.body;
     const images = req.files;
     try {
         // Obtener las rutas de las imágenes
@@ -48,7 +49,6 @@ const createSuplementHandler = async (req, res) => {
             path.join(__dirname, "../public/img/upload", image.filename)
         );
         const uploadedImageUrls = await cloudinaryPush(imagePaths);
-
         let suplementData = {
             name,
             description,
@@ -57,7 +57,7 @@ const createSuplementHandler = async (req, res) => {
             amount,
         };
 
-        const response = await createSuplement(suplementData, category);
+        const response = await createSuplement(suplementData, category,  provider , tags);
         res.status(200).json(response);
     } catch (error) {
         res.status(400).json({ error: error.message });
@@ -72,7 +72,6 @@ const getFilteredSuplementsHandler = async (req, res) => {
         orderBy,
         orderDirection
     } = req.query;
-    console.log(req.query);
     try {
         const suplements = await getFilteredSuplementsController(
             req.query
@@ -84,4 +83,54 @@ const getFilteredSuplementsHandler = async (req, res) => {
     }
 }
 
-module.exports = { getSuplementsHandler, getSuplementByIdHandler, createSuplementHandler , getFilteredSuplementsHandler ,getRandomSuplementsHandler}
+
+const updateSuplementHandler = async (req, res) => {
+    const { id ,name, category, description, price, amount ,provider,tags ,image} = req.body;
+    const images = req.files;
+
+    try {
+        const existingSuplement = await getSuplementById(id);
+
+        if (!existingSuplement) {
+            return res.status(404).json({ error: 'Suplemento no encontrado' });
+        }
+
+        let suplementData = {
+            name,
+            description,
+            price,
+            amount,
+            category,
+            provider
+        };
+        console.log("handle");
+        console.log(images);
+        if (images && images.length > 0) {
+            console.log("handle if");
+            // Eliminar la imagen actual de Cloudinary
+            const publicId = existingSuplement.image.split('/').pop().split('.')[0];
+            console.log(publicId);  
+            await deleteImageFromCloudinary(publicId);
+
+            // Obtener las rutas de las nuevas imágenes
+            const imagePaths = images.map((image) =>
+                path.join(__dirname, "../public/img/upload", image.filename)
+            );
+            const uploadedImageUrls = await cloudinaryPush(imagePaths);
+            suplementData.image = uploadedImageUrls[0];
+        }
+
+        const response = await updateSuplement(id, suplementData ,tags);
+        res.status(200).json(response);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+}
+module.exports = {
+    getSuplementsHandler,
+    getSuplementByIdHandler,
+    createSuplementHandler,
+    getFilteredSuplementsHandler,
+    getRandomSuplementsHandler,
+    updateSuplementHandler
+}
