@@ -44,7 +44,7 @@ const createOrder = async (req, res) => {
                 "failure": `http://localhost:5173/home`,
                 "pending": `http://localhost:5173/home`
             },
-            notification_url: "https://3f73-2802-8011-3005-1d00-ddec-b923-f856-71c7.ngrok-free.app/payment/webhook",
+            notification_url: "https://optimeotechback-production.up.railway.app/payment/webhook",
             metadata: {
                 userId: req.body.userId
             }
