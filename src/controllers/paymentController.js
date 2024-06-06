@@ -114,7 +114,7 @@ const receiveWebhook = async (req, res) => {
                 }
                 await orden.addSuplement(suplemento, { through: { cantidad, precio } });
 
-                if (status === 'completed') {
+                if (status === 'pending') {
                     console.log(cantidad+"CANTIDAD BACKEND");
                     console.log(suplemento.amount+"AMOUNT BACKEND");
                     // Reducir el stock permanentemente
