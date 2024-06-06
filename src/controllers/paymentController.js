@@ -80,7 +80,7 @@ const receiveWebhook = async (req, res) => {
             console.log(payment.metadata,"PAYMENT");
             const total_paid_amount = Math.round(transaction_details.total_paid_amount * 100); // convirtiendo a num entero
             const items = additional_info.items;
-            const userId = metadata ? metadata.user_id : null;
+            const userId = metadata ? metadata.userId : null;
 
             let status;
             if (mpStatus === 'approved') {
