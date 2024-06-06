@@ -39,9 +39,9 @@ const createOrder = async (req, res) => {
             }
             ),
             back_urls: {
-                "success": `http://localhost:5173/home`,
-                "failure": `http://localhost:5173/home`,
-                "pending": `http://localhost:5173/home`
+                "success": `https://penitent-frogs-production-25bf.up.railway.app/home`,
+                "failure": `https://penitent-frogs-production-25bf.up.railway.app/home`,
+                "pending": `https://penitent-frogs-production-25bf.up.railway.app/home`
             },
             notification_url: "https://optimeotechback-production.up.railway.app/payment/webhook",
             metadata: {
@@ -114,9 +114,7 @@ const receiveWebhook = async (req, res) => {
                 }
                 await orden.addSuplement(suplemento, { through: { cantidad, precio } });
 
-                if (status === 'pending') {
-                    console.log(cantidad+"CANTIDAD BACKEND");
-                    console.log(suplemento.amount+"AMOUNT BACKEND");
+                if (status === 'completed' || status === "pending") {
                     // Reducir el stock permanentemente
                     if (suplemento.amount < cantidad) {
                         console.error(`No hay suficiente stock para el suplemento ${suplemento.name}`);
