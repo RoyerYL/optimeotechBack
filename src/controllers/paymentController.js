@@ -47,12 +47,12 @@ const createOrder = async (req, res) => {
             metadata: {
                 userId: req.body.userId
             },
-            store_id:req.body.userId
         };
 
         const preference = new Preference(client)
 
         const result = await preference.create({ body })
+        console.log(result,"RESULTS");
         res.json({ point: result.init_point, });
     } catch (error) {
         console.log(error);
@@ -78,10 +78,9 @@ const receiveWebhook = async (req, res) => {
             const payment = response.data;
 
             const { transaction_details, additional_info, status: mpStatus, payer, metadata } = payment;
-            console.log(payment,"PAYMENT");
             const total_paid_amount = Math.round(transaction_details.total_paid_amount * 100); // convirtiendo a num entero
             const items = additional_info.items;
-            const userId = metadata ? metadata.client_id : null;
+            const userId = metadata ? metadata.user_id : null;
 
             let status;
             if (mpStatus === 'approved') {
