@@ -12,7 +12,7 @@ const client = new MercadoPagoConfig({ accessToken: `${ACCESS_TOKEN}` });
 
 const createOrder = async (req, res) => {
     // const { items, total } = req.body;
-
+    console.log(req.body, "BODY");
     try {
         const items = req.body.items;
 
@@ -46,7 +46,8 @@ const createOrder = async (req, res) => {
             notification_url: "https://optimeotechback-production.up.railway.app/payment/webhook",
             metadata: {
                 userId: req.body.userId
-            }
+            },
+            store_id:req.body.userId
         };
 
         const preference = new Preference(client)
@@ -77,10 +78,10 @@ const receiveWebhook = async (req, res) => {
             const payment = response.data;
 
             const { transaction_details, additional_info, status: mpStatus, payer, metadata } = payment;
-            console.log(payment.metadata,"PAYMENT");
+            console.log(payment,"PAYMENT");
             const total_paid_amount = Math.round(transaction_details.total_paid_amount * 100); // convirtiendo a num entero
             const items = additional_info.items;
-            const userId = metadata ? metadata.userId : null;
+            const userId = metadata ? metadata.client_id : null;
 
             let status;
             if (mpStatus === 'approved') {
