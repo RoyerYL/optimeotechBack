@@ -2,25 +2,34 @@ const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
 
-    sequelize.define('Cart', {
+    sequelize.define('cart', {
         id: {
             type: DataTypes.INTEGER,
             primaryKey: true,
-            allownull: false,
-            autoIncrement: true
+            allowNull: false,
+            autoIncrement: true,
         },
         total: {
             type: DataTypes.DECIMAL(10, 2),
-            allownull: false,
+            allowNull: false,
         },
         paymentMethod: {
             type: DataTypes.STRING(25),
-            allownull: false,
+            allowNull: false,
         },
-        payment_status: {
+        paymentStatus: {
             type: DataTypes.STRING(40),
-            allownull: false,
+            allowNull: false,
         },
+        userId: {
+            type: DataTypes.UUID,
+            allowNull: false,
+            references: {
+                model: 'users', // Asegúrate de que esta línea esté correcta
+                key: 'id'
+            },
         }
+    }
     );
-}
+};
+

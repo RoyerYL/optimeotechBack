@@ -2,7 +2,7 @@ const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
 
-    sequelize.define('suplement', {
+    sequelize.define('Suplement', {
         id: {
             type: DataTypes.UUID,
             defaultValue: DataTypes.UUIDV4,
@@ -14,7 +14,7 @@ module.exports = (sequelize) => {
         },
         description: {
             type: DataTypes.TEXT,
-            allowNull: false
+            defaultValue:""
         },
         price: {
             type: DataTypes.FLOAT,
@@ -27,6 +27,11 @@ module.exports = (sequelize) => {
         amount: {
             type: DataTypes.INTEGER,
             allowNull: false
+        },
+        wigth:{
+            type:DataTypes.INTEGER,
+            defaultValue:1,
+            allowNull:false
         }
         }, { timestamps: false }
     );

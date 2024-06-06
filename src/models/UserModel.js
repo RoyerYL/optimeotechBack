@@ -1,7 +1,6 @@
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
-
     sequelize.define('user', {
         id: {
             type: DataTypes.UUID,
@@ -31,7 +30,17 @@ module.exports = (sequelize) => {
         address: {
             type: DataTypes.STRING,
             allowNull: false
+        },
+        banned: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false
+        },
+        role: {
+            type: DataTypes.ENUM('user', 'admin'),
+            defaultValue: 'user'
         }
-        }, { timestamps: false }
-    );
+    }, {
+        paranoid: true, // Activar borrado lógico
+        timestamps: false,
+    });
 }
