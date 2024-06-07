@@ -5,14 +5,13 @@ const axios = require('axios')
 //IMPORTS MERCADO PAGO
 const { MercadoPagoConfig, Preference } = require('mercadopago');
 const mercadopago = require('mercadopago')
-
+const { sendEmailController } = require('../controllers/userController'); // Importa la función para enviar correos electrónicos
 
 const client = new MercadoPagoConfig({ accessToken: `${ACCESS_TOKEN}` });
 
 
 const createOrder = async (req, res) => {
     // const { items, total } = req.body;
-    console.log(req.body, "BODY");
     try {
         const items = req.body.items;
 
@@ -47,12 +46,12 @@ const createOrder = async (req, res) => {
             metadata: {
                 userId: req.body.userId
             },
+            store_id:req.body.userId
         };
 
         const preference = new Preference(client)
 
         const result = await preference.create({ body })
-        console.log(result,"RESULTS");
         res.json({ point: result.init_point, });
     } catch (error) {
         console.log(error);
@@ -63,7 +62,6 @@ const createOrder = async (req, res) => {
 }
 
 const receiveWebhook = async (req, res) => {
-
     const paymentId = req.query['data.id'];
     const topic = req.query.type;
 
@@ -80,12 +78,13 @@ const receiveWebhook = async (req, res) => {
             const { transaction_details, additional_info, status: mpStatus, payer, metadata } = payment;
             const total_paid_amount = Math.round(transaction_details.total_paid_amount * 100); // convirtiendo a num entero
             const items = additional_info.items;
-            console.log(metadata,"payment");
-            const userId = metadata?.user_id;
+            const userId =  metadata.user_id;
 
             let status;
             if (mpStatus === 'approved') {
                 status = 'completed';
+                // Envía un correo electrónico cuando el pago es exitoso
+                await sendEmailController(payer.email, null, 'buy');
             } else if (mpStatus === 'pending') {
                 status = 'pending';
             } else {
@@ -99,7 +98,6 @@ const receiveWebhook = async (req, res) => {
                 userId,
             });
 
-            // AÑADIR suplementos a la orden
             for (const item of items) {
                 if (!item.title || !item.quantity || !item.unit_price) {
                     throw new Error(`El item no tiene la estructura esperada: ${JSON.stringify(item)}`);
@@ -139,7 +137,8 @@ const receiveWebhook = async (req, res) => {
     } else {
         res.status(400).send('tipo de webhook no soportado');
     }
-}
+};
+
 
 
 module.exports = { createOrder, receiveWebhook }
