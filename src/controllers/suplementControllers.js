@@ -142,7 +142,7 @@ const createSuplement = async (suplement, category, provider, tags) => {
 };
 
 const getFilteredSuplementsController = async (params) => {
-    const { category, tags, provider, orderBy, orderDirection, name, page = 1, pageSize = 7 } = params;
+    const { category, tags, provider, orderBy="price", orderDirection="ASC", name, page = 1, pageSize = 7 } = params;
     let order = [];
     if (orderBy && orderDirection) {
         order = [[orderBy, orderDirection]]
@@ -152,6 +152,7 @@ const getFilteredSuplementsController = async (params) => {
 
     if (name) where = { ...where, name: { [Op.iLike]: `%${name}%` } }; // Filtro case-insensitive
     if (category) where = { ...where, CategoryId:category  }; // Filtro case-insensitive
+    where = { ...where, amount: { [Op.gt]: 0 } }; // Filtro por stock mayor que 0
 
     try {
         let include = [];

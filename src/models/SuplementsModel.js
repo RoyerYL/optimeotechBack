@@ -27,6 +27,15 @@ module.exports = (sequelize) => {
         amount: {
             type: DataTypes.INTEGER,
             allowNull: false
+        },
+        sales:{
+            type:DataTypes.INTEGER,
+            defaultValue:0
+        },
+        wigth:{
+            type:DataTypes.INTEGER,
+            defaultValue:1,
+            allowNull:false
         }
         }, { timestamps: false }
     );

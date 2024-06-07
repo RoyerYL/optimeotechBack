@@ -9,6 +9,8 @@ const loginRouter = require('./loginRouter');
 const providerRouter = require("./providerRouter");
 const tagsRouter = require("./tagsRouter");
 const createCart = require('./createCart');
+const commentsRouter = require("./commentsRouter");
+const updateUser = require('./updateUser');
 
 
 
@@ -25,5 +27,7 @@ routes.use("/payment", payment);
 routes.use('/orders', getOrders)
 routes.use('/login', loginRouter);
 routes.use("/cart", createCart)
+routes.use("/comments", commentsRouter)
+routes.use("/updateuser", updateUser);
 
 module.exports = routes;
